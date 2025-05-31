@@ -1,39 +1,62 @@
 import pandas as pd
+import json
 from config.const import HEADER_ROWS, COLUMNS_NAMES
 from typing import Dict, Callable, Union, List, Optional
 import warnings
 
 
-def projects_by_month(df: pd.DataFrame, month: str, content_owner: str = "All", factory: str = "Design") -> str:
+def filter_opportunities(df: pd.DataFrame, month: str = "All",
+                         content_owner: str = "All",
+                         factory: str = "All",
+                         from_sensitivity: float = 0,
+                         to_sensitivity: float = -1,
+                         status: str = "All") -> str:
     """
-    Extracts opportunities for a given month from the dataframe,
-    optionally filtered by Content Owner. If 'All' is specified, only
-    rows with Design > 0 are returned. Returns a formatted string for readability.
+    Filter opportunities from the dataframe, optionally filtered by Content Owner, Factory,
+    Minimum Sensitivity, Maximum Sensitivity, and Status.
 
     Args:
         df (pd.DataFrame): The input dataframe.
         month (str): The month to filter by in the 'Start' column.
         content_owner (str): The content owner name to filter by, or 'All'.
         factory (str): The factory name to filter by, or 'Design'.
+        from_sensitivity (int): The minimum sensitivity to filter by.
+        to_sensitivity (int): The maximum sensitivity to filter by.
+        status (str): The status of the opportunity to filter by, or 'All'.
 
     Returns:
-        str: Formatted string of filtered opportunities. Teh returned data must not be processed further.
+        str: Formatted string of filtered opportunities.
     """
     required_columns = [
         'id', 'Client', 'Project Name', 'Duration', 'PCC', 'PE', 'CPIS',
-        'CBE', 'Design', 'Tech', 'Others', 'Start', 'Content Owner'
+        'CBE', 'Design', 'Tech', 'Others', 'Start', 'Content Owner', 'Status', 'Total Value', 'Psensitivity'
     ]
     for col in required_columns:
         if col not in df.columns:
             raise ValueError(f"Missing required column: {col}")
 
-    filtered_df = df[
-        (df['Start'] == month) &
-        (pd.to_numeric(df[factory], errors='coerce').notna())
-        ]
+    filtered_df = df
+    # filtered_df = pd.to_numeric(df[factory], errors='coerce').notna()
+
+    if month != "All":
+        filtered_df = df[(df['Start'] == month)]
 
     if content_owner != "All":
         filtered_df = filtered_df[filtered_df['Content Owner'] == content_owner]
+
+    if status != "All":
+        filtered_df = filtered_df[filtered_df['Status'] == status]
+
+    if factory != "All":
+        filtered_df = filtered_df[pd.to_numeric(filtered_df[factory], errors='coerce') > 0]
+
+    if from_sensitivity != 0:
+        filtered_df = filtered_df[pd.to_numeric(filtered_df['Psensitivity'] >= from_sensitivity,
+                                                errors='coerce') >= from_sensitivity]
+
+    if to_sensitivity != -1:
+        filtered_df = filtered_df[pd.to_numeric(filtered_df['Psensitivity'] <= to_sensitivity,
+                                                errors='coerce') <= to_sensitivity]
 
     if filtered_df.empty:
         return "No matching opportunities found."
@@ -43,60 +66,51 @@ def projects_by_month(df: pd.DataFrame, month: str, content_owner: str = "All", 
         output += f" | Content Owner: {content_owner}"
     output += "\n\n"
 
-    for idx, row in filtered_df.iterrows():
-        output += f"Opportunity ID: {row['id']}\n"
-        output += f"  Client       : {row['Client']}\n"
-        output += f"  Project Name : {row['Project Name']}\n"
-        output += f"  Duration     : {row['Duration']}\n"
-        output += f"  PCC          : {row['PCC']}\n"
-        output += f"  PE           : {row['PE']}\n"
-        output += f"  CPIS         : {row['CPIS']}\n"
-        output += f"  CBE          : {row['CBE']}\n"
-        output += f"  Design       : {row['Design']}\n"
-        output += f"  Tech         : {row['Tech']}\n"
-        output += f"  Others       : {row['Others']}\n\n"
+    columns_to_display = ['id', 'Client', 'Project Name', 'AdB', 'Opportunity Owner', 'Content Owner', 'Start',
+                          'Duration', 'Psensitivity', 'Total Value', 'PCC', 'PE', 'CPIS', 'CBE', 'Design', 'Tech',
+                          'Others']
 
-    return output.strip()
+    float_columns = ['PCC', 'PE', 'CPIS', 'CBE', 'Design', 'Tech', 'Others', 'Psensitivity', 'Total Value']
+    split_columns = ['PCC', 'PE', 'CPIS', 'CBE', 'Design', 'Tech', 'Others']
 
+    # Build the list of project dictionaries
+    opportunities = []
+    opportunity_split = []
+    for _, row in filtered_df.iterrows():
+        opportunity = {}
+        opportunity_split = {}  # reset for each row
 
-def projects_from_content_owner(df: pd.DataFrame, sd: str) -> str:
-    """
-    Extract rows from the DataFrame where 'Content Owner' matches the provided value,
-    collect specific columns for each row, and include summary statistics.
-
-    Args:
-        df (pd.DataFrame): The input DataFrame
-        sd (str, optional): The content owner to filter by.
-
-    Returns:
-        str: A text string containing the project details and summary statistics
-    """
-    # Filter rows where 'Content Owner' matches the provided value
-    filtered_df = df[df['Content Owner'] == sd]
-
-    # Get the columns to display
-    columns_to_display = ['Client', 'Project Name', 'Sensitivity', 'Start', 'Duration', 'Total Value']
-
-    # Initialize output string
-    output = f"\nProjects owned by {sd}:\n\n"
-
-    # Add each row with the specified columns to the output
-    for index, row in filtered_df.iterrows():
-        output += f"Project {index + 1}:\n"
         for col in columns_to_display:
-            output += f"  {col}: {row[col]}\n"
-        output += "\n"
+            value = row.get(col, None)
 
-    # Calculate and add summary statistics to the output
-    row_count = len(filtered_df)
-    total_value_sum = filtered_df['Total Value'].sum()
+            if col in float_columns and value is not None:
+                try:
+                    value = f"{float(value):,.0f}"  # no decimals
+                except (ValueError, TypeError):
+                    value = "0"
 
-    output += f"Summary:\n"
-    output += f"  Total projects: {row_count}\n"
-    output += f"  Total value: {total_value_sum}"
+            # Split logic
+            if col in split_columns:
+                opportunity_split[col] = value
+            else:
+                opportunity[col] = value
 
-    # Return the output string
-    return output
+        # Nest split data inside the main project dictionary
+        opportunity["Split"] = opportunity_split
+        opportunities.append(opportunity)
+
+    # Create summary
+    summary = {
+        "Total projects": len(filtered_df),
+        "Total value": filtered_df['Total Value'].sum()
+    }
+
+    # Combine everything into a final dictionary
+    output_json = {
+        "Opportunities": opportunities,
+        "Summary": summary
+    }
+    return json.dumps(output_json, indent=4)
 
 
 def normalize_data(df: pd.DataFrame, column_names: List[str]) -> pd.DataFrame:
@@ -110,10 +124,22 @@ def normalize_data(df: pd.DataFrame, column_names: List[str]) -> pd.DataFrame:
     Returns:
         pd.DataFrame: DataFrame with updated column names and normalized 'Start' column
     """
+    # List of columns to convert
+    columns_to_convert = [
+        'PCC', 'PE', 'CPIS', 'CBE', 'Design', 'Tech', 'Total Value',
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December',
+        'Q1', 'Q2', 'Q3', 'Q4', 'FY'
+    ]
+
     df_copy = df.copy()
     df_copy.columns = column_names
+    for col in columns_to_convert:
+        if col in df_copy.columns:
+            df_copy[col] = pd.to_numeric(df_copy[col], errors='coerce').fillna(0.0)
     df_copy['Start'] = pd.to_datetime(df_copy['Start'], errors='coerce')
     df_copy['Start'] = df_copy['Start'].dt.strftime('%B')
+    df_copy['Psensitivty'] = df_copy['Psensitivity'].astype(float)
     return df_copy
 
 

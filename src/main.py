@@ -12,7 +12,7 @@ from signal import signal, SIGINT
 
 from utils.misc import parse_options
 from datawrangler.pandas_functions import (
-    read_excel, normalize_data, projects_from_content_owner, projects_by_month
+    read_excel, normalize_data
 )
 from config.config import logger, mcp_config
 from config.const import (
@@ -70,8 +70,6 @@ def app_run() -> None:
         mcp_config.mcp = mcp_forecast
         mcp_config.df = read_excel(FORECAST_FILE_PATHNAME)
         mcp_config.df = normalize_data(mcp_config.df, COLUMNS_NAMES)
-        # df = projects_by_month(mcp_config.df, "January", "All")
-        # quit()
     except Exception as load_error:
         logger.error(f"Failed to load data: {load_error}")
         app_stop(1)

@@ -1,0 +1,11 @@
+# Running MCP Inspector
+
+From the command line launch:
+    npx @modelcontextprotocol/inspector
+
+Insert the following parameters:
+Command: /Users/ag/.local/bin/uv
+Parameters: --directory "/Users/ag/Documents/code/sketchin/redforecast/src" run main.py
+
+# Running a local LLM with ollama
+mcphost -m ollama:mistral
