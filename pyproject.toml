@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "MCP Server for Red Forecast Excel file"
 requires-python = ">=3.12"
 dependencies = [
-    "fastmcp>=2.5.1",
+    "fastmcp>=2.5.2",
     "loguru>=0.7.3",
     "notebook>=7.4.3",
     "pandas>=2.2.3",

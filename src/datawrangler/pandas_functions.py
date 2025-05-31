@@ -36,7 +36,6 @@ def filter_opportunities(df: pd.DataFrame, month: str = "All",
             raise ValueError(f"Missing required column: {col}")
 
     filtered_df = df
-    # filtered_df = pd.to_numeric(df[factory], errors='coerce').notna()
 
     if month != "All":
         filtered_df = df[(df['Start'] == month)]
@@ -82,24 +81,17 @@ def filter_opportunities(df: pd.DataFrame, month: str = "All",
 
         for col in columns_to_display:
             value = row.get(col, None)
-
             if col in float_columns and value is not None:
                 try:
                     value = f"{float(value):,.0f}"  # no decimals
                 except (ValueError, TypeError):
                     value = "0"
-
-            # Split logic
             if col in split_columns:
                 opportunity_split[col] = value
             else:
                 opportunity[col] = value
-
-        # Nest split data inside the main project dictionary
-        opportunity["Split"] = opportunity_split
+        opportunity["Factories Split"] = opportunity_split
         opportunities.append(opportunity)
-
-    # Create summary
     summary = {
         "Total projects": len(filtered_df),
         "Total value": filtered_df['Total Value'].sum()

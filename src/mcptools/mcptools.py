@@ -25,8 +25,11 @@ def get_opportunities_with_filters(month: str = "All", content_owner: str = "All
     if not hasattr(mcp_config, 'df') or mcp_config.df is None:
         return "Error: Dataframe not loaded. Please ensure the application has loaded the data."
 
-    return filter_opportunities(mcp_config.df, month, content_owner, factory,
-                                from_sensitivity, to_sensitivity, status, )
+    try:
+        return filter_opportunities(mcp_config.df, month, content_owner, factory,
+                                    from_sensitivity, to_sensitivity, status, )
+    except Exception as load_error:
+        return f"Error: Something went wrong..."
 
 
 def register_tools():
