@@ -6,10 +6,8 @@ This module contains the main application logic for the RED Forecast application
 
 import sys
 from typing import Any, NoReturn, Optional
-
 from fastmcp import FastMCP
 from signal import signal, SIGINT
-
 from utils.misc import parse_options
 from datawrangler.pandas_functions import (
     read_excel, normalize_data

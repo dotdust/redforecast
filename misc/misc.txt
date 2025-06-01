@@ -9,3 +9,21 @@ Parameters: --directory "/Users/ag/Documents/code/sketchin/redforecast/src" run 
 
 # Running a local LLM with ollama
 mcphost -m ollama:mistral
+
+# Function description
+
+Write a function in the file pandas_functions.py called get_forecast() that will take as an input a dataframe that contains the following fields:
+['id', 'Client', 'Project Name', 'Status','AdB', 'Opportunity Owner', 'Content Owner', 'Start',
+                          'Duration', 'Psensitivity', 'Total Value', 'PCC', 'PE', 'CPIS', 'CBE', 'Design', 'Tech',
+                          'Others'] in the form of a list.
+The dataframe also contains the values of the forecast for the months from January to December in the respective columns.
+The function will calculate for each month in the passed list:
+- The total of the forecast for the month using the Total Value field.
+- The split of the total for each month according to the fields PCC, PE, CPIS, CBE, Design, Tech, Others.
+- The weighted total of the forecast that is calculated by multiplying the Total Value of each Opportunity by the
+   sensitivity value of that opportunity.
+- The split of the weighted total for each opportunity.
+- The weighted total for each month
+- THe split of the weighted total for each month according to the fields PCC, PE, CPIS, CBE, Design, Tech, Others.
+- The function must return structured JSON data
+

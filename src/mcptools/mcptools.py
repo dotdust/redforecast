@@ -1,7 +1,30 @@
 from config.config import mcp_config
 from datawrangler.pandas_functions import (
-    read_excel, normalize_data, filter_opportunities)
+    read_excel, normalize_data, filter_opportunities, get_forecast)
 from config.const import FORECAST_FILE_PATHNAME, HEADER_ROWS, COLUMNS_NAMES
+from typing import Dict, Callable, Union, List, Optional, Any
+from datetime import datetime
+
+
+def get_forecast_data(months: List[str], factory: str = 'All') -> str:
+    """
+        Get forecast data for the given months, optionally filtered by Factory.
+        If the month list is empty, use the current month.
+
+        Args:
+            months (List): A list with month to filter by in the 'Start' column.
+            factory (str): The factory name to filter by, or all by default.
+
+        Returns:
+            str: Formatted string of the forecast data.
+        """
+    if not hasattr(mcp_config, 'df') or mcp_config.df is None:
+        return "Error: Dataframe not loaded. Please ensure the application has loaded the data."
+
+    try:
+        return get_forecast(mcp_config.df, months, factory)
+    except Exception as load_error:
+        return f"Error: Something went wrong...\n {load_error}"
 
 
 def get_opportunities_with_filters(month: str = "All", content_owner: str = "All", factory: str = "All",
@@ -40,6 +63,7 @@ def register_tools():
 
     # Register the tool
     mcp.tool()(get_opportunities_with_filters)
+    mcp.tool()(get_forecast_data)
 
 
 def reload_forecast_data() -> str:
