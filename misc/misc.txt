@@ -10,17 +10,3 @@ Parameters: --directory "/Users/ag/Documents/code/sketchin/redforecast/src" run 
 # Running a local LLM with ollama
 mcphost -m ollama:mistral
 
-I need to modify this function in order to:
-
-Calculate the monthly forecast for each month that is passed as an argument.
-
-The monthly forecast that we will call Unweighted Forecast will be obtained by dividing the value of each month
-row by the sensitivity in the same row.
-
-The monthly forecast that we will call Weighted Forecast will be the value of the month in the
-corresponding row.
-
-You will need also to calculate the split of the weighted and unweighted forecast using the percentages
-in columns 'PPCC', 'PPE', 'PCPS', PCBE', 'Pdesign', 'PTech'. You should also calculate another split called
-Others that will be consolidated in the split and that is represented by
-(1 - The values of 'PPCC', 'PPE', 'PCPS', PCBE', 'Pdesign', 'PTech')
