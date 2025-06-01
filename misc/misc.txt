@@ -10,20 +10,17 @@ Parameters: --directory "/Users/ag/Documents/code/sketchin/redforecast/src" run 
 # Running a local LLM with ollama
 mcphost -m ollama:mistral
 
-# Function description
+I need to modify this function in order to:
 
-Write a function in the file pandas_functions.py called get_forecast() that will take as an input a dataframe that contains the following fields:
-['id', 'Client', 'Project Name', 'Status','AdB', 'Opportunity Owner', 'Content Owner', 'Start',
-                          'Duration', 'Psensitivity', 'Total Value', 'PCC', 'PE', 'CPIS', 'CBE', 'Design', 'Tech',
-                          'Others'] in the form of a list.
-The dataframe also contains the values of the forecast for the months from January to December in the respective columns.
-The function will calculate for each month in the passed list:
-- The total of the forecast for the month using the Total Value field.
-- The split of the total for each month according to the fields PCC, PE, CPIS, CBE, Design, Tech, Others.
-- The weighted total of the forecast that is calculated by multiplying the Total Value of each Opportunity by the
-   sensitivity value of that opportunity.
-- The split of the weighted total for each opportunity.
-- The weighted total for each month
-- THe split of the weighted total for each month according to the fields PCC, PE, CPIS, CBE, Design, Tech, Others.
-- The function must return structured JSON data
+Calculate the monthly forecast for each month that is passed as an argument.
 
+The monthly forecast that we will call Unweighted Forecast will be obtained by dividing the value of each month
+row by the sensitivity in the same row.
+
+The monthly forecast that we will call Weighted Forecast will be the value of the month in the
+corresponding row.
+
+You will need also to calculate the split of the weighted and unweighted forecast using the percentages
+in columns 'PPCC', 'PPE', 'PCPS', PCBE', 'Pdesign', 'PTech'. You should also calculate another split called
+Others that will be consolidated in the split and that is represented by
+(1 - The values of 'PPCC', 'PPE', 'PCPS', PCBE', 'Pdesign', 'PTech')

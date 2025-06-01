@@ -149,133 +149,88 @@ def read_excel(file_path: str) -> pd.DataFrame:
     return df
 
 
-def get_forecast(df: pd.DataFrame, months: List[str] = None, factory: str = 'All') -> str:
+def get_forecast(
+        df: pd.DataFrame,
+        months: Optional[List[str]] = None,
+        factory: str = 'All'
+) -> str:
     """
-    Calculate forecast metrics for the given months.
+    Calculate weighted and unweighted forecast metrics with splits for given months.
 
     Args:
-        df (pd.DataFrame): The input dataframe containing forecast data.
-        months (List[str]): List of months to calculate forecast for.
-        factory (str, optional): The factory name to filter by, or 'All'. Defaults to 'All'.
+        df (pd.DataFrame): Input dataframe containing forecast data.
+        months (List[str]): List of months for calculations.
+        factory (str, optional): Factory filter, defaults to 'All'.
 
     Returns:
-        str: Structured JSON data containing forecast metrics with numeric values formatted with
-        the thousand separators and no decimals.
+        str: JSON-formatted forecast data with thousands separators.
     """
 
     def format_number(value: float) -> str:
-        """Format a number with the thousand separators and no decimals."""
-        return f"{int(value):,}"
+        return f"{int(round(value)):,.0f}"
 
     def format_values(obj):
-        """Recursively format all numeric values in a dictionary or list."""
         if isinstance(obj, dict):
             return {k: format_values(v) for k, v in obj.items()}
         elif isinstance(obj, list):
             return [format_values(item) for item in obj]
         elif isinstance(obj, (int, float)):
             return format_number(obj)
-        else:
-            return obj
+        return obj
 
-    # Handle an empty dataframe or month list
     if df.empty or not months:
-        empty_result = {
-            "months": {},
-            "total": {
-                "forecast": 0,
-                "weighted_forecast": 0,
-                "split": {},
-                "weighted_split": {}
-            }
-        }
-        # Format all numeric values in the empty result
-        formatted_empty_result = format_values(empty_result)
-        return json.dumps(formatted_empty_result, indent=4)
+        return json.dumps({"months": {}, "total": {}}, indent=4)
 
-    # Validate required columns
-    required_columns = [
-        'id', 'Client', 'Project Name', 'Status', 'AdB', 'Opportunity Owner', 'Content Owner', 'Start',
-        'Duration', 'Psensitivity', 'Total Value', 'PCC', 'PE', 'CPIS', 'CBE', 'Design', 'Tech',
-        'Others'
-    ]
-    required_columns.extend(months)
+    required_cols = ['Psensitivity', 'PPCC', 'PPE', 'PCPS', 'PCBE', 'Pdesign', 'PTech'] + months
+    missing_cols = set(required_cols) - set(df.columns)
+    if missing_cols:
+        raise ValueError(f"Missing required columns: {', '.join(missing_cols)}")
 
-    for col in required_columns:
-        if col not in df.columns:
-            raise ValueError(f"Missing required column: {col}")
+    df = df[required_cols].copy()
+    df.fillna(0, inplace=True)
 
-    # Define split columns
-    split_columns = ['PCC', 'PE', 'CPIS', 'CBE', 'Design', 'Tech', 'Others']
+    numeric_cols = ['Psensitivity'] + months + required_cols[1:7]
+    df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors='coerce').fillna(0)
 
-    # Ensure numeric columns are properly converted
-    numeric_columns = ['Psensitivity', 'Total Value'] + split_columns + months
-    for col in numeric_columns:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0.0)
+    if factory != 'All' and factory in df.columns:
+        df = df[df[factory] > 0]
 
-    # Filter by factory if specified
-    if factory != 'All':
-        df = df[pd.to_numeric(df[factory], errors='coerce') > 0]
+    split_columns = {col: col[1:].capitalize() for col in required_cols[1:7]}
+    result = {"months": {}, "total": {"unweighted_forecast": 0, "weighted_forecast": 0, "split": {}}}
 
-    # Initialize result dictionary
-    result = {
-        "months": {},
-        "total": {
-            "forecast": 0,
-            "weighted_forecast": 0,
-            "split": {col: 0 for col in split_columns},
-            "weighted_split": {col: 0 for col in split_columns}
-        }
-    }
+    for col in list(split_columns.values()) + ['Others']:
+        result["total"]["split"][col] = {"unweighted": 0, "weighted": 0}
 
-    # Create a copy of the dataframe to avoid modifying the original
-    df_copy = df.copy()
-
-    # Process each month
     for month in months:
-        # Initialize month data
-        result["months"][month] = {
-            "forecast": 0,
-            "weighted_forecast": 0,
-            "split": {col: 0 for col in split_columns},
-            "weighted_split": {col: 0 for col in split_columns}
+        unweighted = (df[month] / df['Psensitivity'].replace(0, pd.NA)).fillna(0)
+        weighted = df[month]
+
+        splits = df[list(split_columns.keys())]
+        splits['POthers'] = 1 - splits.sum(axis=1)
+
+        month_data = {
+            "unweighted_forecast": unweighted.sum(),
+            "weighted_forecast": weighted.sum(),
+            "split": {}
         }
 
-        # Calculate total forecast for the month
-        month_total = df_copy[month].sum()
-        result["months"][month]["forecast"] = float(month_total)
-        result["total"]["forecast"] += float(month_total)
+        for original_col, new_col in split_columns.items():
+            uw_value = (splits[original_col] * unweighted).sum()
+            w_value = (splits[original_col] * weighted).sum()
+            month_data["split"][new_col] = {"unweighted": uw_value, "weighted": w_value}
+            result["total"]["split"][new_col]["unweighted"] += uw_value
+            result["total"]["split"][new_col]["weighted"] += w_value
 
-        # Calculate split of total for the month
-        for col in split_columns:
-            # Calculate the proportion of each split column relative to Total Value
-            # and apply it to the month's forecast
-            # Handle division by zero by replacing zeros with NaN
-            df_copy['temp_ratio'] = df_copy[col] / df_copy['Total Value'].replace(0, float('nan'))
-            df_copy['temp_ratio'] = df_copy['temp_ratio'].fillna(0)
+        others_uw = (splits['POthers'] * unweighted).sum()
+        others_w = (splits['POthers'] * weighted).sum()
+        month_data["split"]["Others"] = {"unweighted": others_uw, "weighted": others_w}
 
-            # Calculate split value for the month
-            split_value = (df_copy['temp_ratio'] * df_copy[month]).sum()
-            result["months"][month]["split"][col] = float(split_value)
-            result["total"]["split"][col] += float(split_value)
+        result["total"]["split"]["Others"]["unweighted"] += others_uw
+        result["total"]["split"]["Others"]["weighted"] += others_w
 
-        # Calculate weighted forecast (Total Value * sensitivity)
-        df_copy['weighted_value'] = df_copy[month] * df_copy['Psensitivity']
-        weighted_total = df_copy['weighted_value'].sum()
-        result["months"][month]["weighted_forecast"] = float(weighted_total)
-        result["total"]["weighted_forecast"] += float(weighted_total)
+        result["total"]["unweighted_forecast"] += month_data["unweighted_forecast"]
+        result["total"]["weighted_forecast"] += month_data["weighted_forecast"]
 
-        # Calculate split of weighted forecast
-        for col in split_columns:
-            # Use the same ratio but apply to weighted values
-            weighted_split_value = (df_copy['temp_ratio'] * df_copy['weighted_value']).sum()
-            result["months"][month]["weighted_split"][col] = float(weighted_split_value)
-            result["total"]["weighted_split"][col] += float(weighted_split_value)
+        result["months"][month] = month_data
 
-        # Clean up temporary columns
-        df_copy = df_copy.drop(['temp_ratio', 'weighted_value'], axis=1, errors='ignore')
-
-    # Format all numeric values in the result dictionary
-    formatted_result = format_values(result)
-    return json.dumps(formatted_result, indent=4)
+    return json.dumps(format_values(result), indent=4)
