@@ -33,21 +33,29 @@ def create_json(df: pd.DataFrame) -> str:
     Create a JSON string from a DataFrame.
 
     Returns:
-        str: JSON formatted string containing opportunities data
+        str: JSON formatted string containing opportunity data
     """
     # Define required variables
     filtered_df = df
-    columns_to_display = ['id', 'Client', 'Project Name', 'Status', 'Total Value']
-    float_columns = ['Total Value']
-    split_columns = ['PCC', 'PE', 'CPIS', 'CBE', 'Design', 'Tech']
+
+    columns_to_display = ['id', 'Client', 'Project Name', 'Status', 'AdB', 'Opportunity Owner', 'Content Owner',
+                          'Start', 'Duration', 'Psensitivity', 'Total Value', 'PCC', 'PE', 'CPIS', 'CBE', 'Design',
+                          'Tech', 'Others', 'January', 'February', 'March', 'April', 'May', 'June', 'July',
+                          'August', 'September', 'October', 'November', 'December', 'Q1', 'Q2', 'Q3', 'Q4', 'FY']
+
+    float_columns = ['PCC', 'PE', 'CPIS', 'CBE', 'Design', 'Tech', 'Others', 'Psensitivity', 'Total Value',
+                     'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
+                     'October', 'November', 'December', 'Q1', 'Q2', 'Q3', 'Q4', 'FY']
+    split_columns = ['PCC', 'PE', 'CPIS', 'CBE', 'Design', 'Tech', 'Others']
+    revenue_columns = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
+                       'October', 'November', 'December', 'Q1', 'Q2', 'Q3', 'Q4', 'FY']
 
     # Build the list of project dictionaries
     opportunities = []
-    opportunity_split = []
     for _, row in filtered_df.iterrows():
         opportunity = {}
         opportunity_split = {}  # reset for each row
-
+        opportunity_revenues = {}
         for col in columns_to_display:
             value = row.get(col, None)
             if col in float_columns and value is not None:
@@ -55,22 +63,19 @@ def create_json(df: pd.DataFrame) -> str:
                     value = f"{float(value):,.0f}"  # no decimals
                 except (ValueError, TypeError):
                     value = "0"
-            if col in split_columns:
+            if col in revenue_columns:
+                opportunity_revenues[col] = value
+            elif col in split_columns:
                 opportunity_split[col] = value
             else:
                 opportunity[col] = value
-        opportunity["Factories Split"] = opportunity_split
+        opportunity["Factories split"] = opportunity_split
+        opportunity["Revenues by month"] = opportunity_revenues
         opportunities.append(opportunity)
-
-    summary = {
-        "Total projects": len(filtered_df),
-        "Total value": filtered_df['Total Value'].sum()
-    }
 
     # Combine everything into a final dictionary
     output_json = {
         "Opportunities": opportunities,
-        "Summary": summary
     }
 
     return json.dumps(output_json, indent=4)
@@ -200,7 +205,7 @@ def record_exists(date_str: str) -> bool:
         date_str: Date string in yyyy-mm-dd format
 
     Returns:
-        bool: True if record exists, False otherwise
+        bool: True if the record exists, False otherwise
     """
     cur = db_connection.cursor()
     cur.execute('SELECT COUNT(*) FROM forecast WHERE fdate = ?', (date_str,))
