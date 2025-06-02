@@ -11,6 +11,7 @@ class Config(object):
 
     df = None
     mcp = None
+    db = None
 
 
 class ProductionConfig(Config):

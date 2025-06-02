@@ -8,13 +8,13 @@ import sys
 from typing import Any, NoReturn, Optional
 from fastmcp import FastMCP
 from signal import signal, SIGINT
-from utils.misc import parse_options
+from utils.misc import parse_options, open_db
 from datawrangler.pandas_functions import (
     read_excel, normalize_data
 )
 from config.config import logger, mcp_config
 from config.const import (
-    app_Name, app_Version, FORECAST_FILE_PATHNAME, HEADER_ROWS, COLUMNS_NAMES
+    app_Name, app_Version, FORECAST_FILE_PATHNAME, HEADER_ROWS, COLUMNS_NAMES, DB_FILE_PATHNAME
 )
 from mcptools.mcptools import register_tools
 
@@ -68,6 +68,7 @@ def app_run() -> None:
         mcp_config.mcp = mcp_forecast
         mcp_config.df = read_excel(FORECAST_FILE_PATHNAME)
         mcp_config.df = normalize_data(mcp_config.df, COLUMNS_NAMES)
+        mcp_config.db = open_db(DB_FILE_PATHNAME)
     except Exception as load_error:
         logger.error(f"Failed to load data: {load_error}")
         app_stop(1)

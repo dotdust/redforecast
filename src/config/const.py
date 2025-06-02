@@ -12,3 +12,5 @@ COLUMNS_NAMES = ['na', 'na', 'id', 'Client', 'Contact Role', 'Project Name', 'na
                  'Content Owner', 'na', 'Start', 'Duration', 'na', 'January', 'February', 'March',
                  'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December',
                  'na', 'Q1', 'Q2', 'Q3', 'Q4', 'na', 'FY', 'na', 'na', 'Next years']
+
+DB_FILE_PATHNAME = "/Users/ag/Documents/code/sketchin/redforecast/historical_data/forecast.db"

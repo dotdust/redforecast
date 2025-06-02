@@ -12,6 +12,7 @@ from typing import Dict, Callable, Union, List, Optional, Any, NoReturn
 from signal import signal, SIGINT
 import sys
 from loguru import logger
+from typing import Tuple
 
 FORECAST_FILE_PATHNAME = ('/Users/ag/Library/CloudStorage/OneDrive-BUSINESSINTEGRATIONPARTNERSSPA/'
                           'RED Team - Market Board - Forecast/RED Forecast.xlsx')
@@ -26,6 +27,51 @@ COLUMNS_NAMES = ['na', 'na', 'id', 'Client', 'Contact Role', 'Project Name', 'na
 DEBUG = True
 data_file = "/Users/ag/Documents/code/sketchin/redforecast/historical_data/forecast.db"
 db_connection = None
+
+
+def get_closest_dates(db_path: str, date1: str, date2: str) -> Tuple[str, str]:
+    """
+    Finds the closest dates to date1 (backward) and date2 (forward) in the forecast database.
+
+    Args:
+        db_path (str): Path to the SQLite database.
+        date1 (str): The first date as a string (YYYY-MM-DD).
+        date2 (str): The second date as a string (YYYY-MM-DD).
+
+    Returns:
+        Tuple[str, str]: A tuple containing the closest backward date to date1,
+                         and the closest forward date to date2.
+    """
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    # Closest backward date
+    cursor.execute("""
+                   SELECT fdate
+                   FROM forecast
+                   WHERE fdate <= ?
+                   ORDER BY fdate DESC
+                   LIMIT 1
+                   """, (date1,))
+
+    result1 = cursor.fetchone()
+    closest_date1 = result1[0] if result1 else None
+
+    # Closest forward date
+    cursor.execute("""
+                   SELECT fdate
+                   FROM forecast
+                   WHERE fdate >= ?
+                   ORDER BY fdate ASC
+                   LIMIT 1
+                   """, (date2,))
+
+    result2 = cursor.fetchone()
+    closest_date2 = result2[0] if result2 else None
+
+    conn.close()
+
+    return closest_date1, closest_date2
 
 
 def create_json(df: pd.DataFrame) -> str:
