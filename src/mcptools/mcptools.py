@@ -102,10 +102,11 @@ def register_tools():
     if mcp is None:
         raise RuntimeError("MCP instance not initialized")
 
-    # Register the tool
+    # Register the tools
     mcp.tool()(get_opportunities_with_filters)
     mcp.tool()(get_forecast_data)
     mcp.tool()(compare_forecast_dates)
+    mcp.tool()(reload_forecast_data)
 
 
 def reload_forecast_data() -> str:
@@ -115,13 +116,13 @@ def reload_forecast_data() -> str:
     Args:
 
     Returns:
-        None
+        str: Status message indicating success or failure
     """
     result = "Data loaded successfully"
 
     try:
         mcp_config.df = read_excel(FORECAST_FILE_PATHNAME)
-        mcp_config.df = set_column_names(mcp_config.df, COLUMNS_NAMES)
+        mcp_config.df = normalize_data(mcp_config.df, COLUMNS_NAMES)
     except Exception as load_error:
         result = f"Failed to load data: {load_error}"
 

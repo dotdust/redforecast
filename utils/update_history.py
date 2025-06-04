@@ -1,31 +1,24 @@
 import sqlite3
-from logging import Logger
 from sqlite3 import Connection
 import pandas as pd
-import numpy as np
 import datetime
 from datetime import date
 import os
 import json
-import warnings
-from typing import Dict, Callable, Union, List, Optional, Any, NoReturn
-from signal import signal, SIGINT
 import sys
 from loguru import logger
-from typing import Tuple
+from typing import Dict, Callable, Union, List, Optional, Any, NoReturn, Tuple
+from signal import signal, SIGINT
 
-FORECAST_FILE_PATHNAME = ('/Users/ag/Library/CloudStorage/OneDrive-BUSINESSINTEGRATIONPARTNERSSPA/'
-                          'RED Team - Market Board - Forecast/RED Forecast.xlsx')
-HEADER_ROWS = 21
-COLUMNS_NAMES = ['na', 'na', 'id', 'Client', 'Contact Role', 'Project Name', 'na', 'na', 'Status', 'na',
-                 'PCC', 'PE', 'CPIS', 'CBE', 'Design', 'Tech', 'Others', 'Total Value', 'Sensitivity',
-                 'Psensitivity', 'na', 'PPCC', 'na', 'PPE', 'na', 'PCPS', 'na', 'PCBE', 'na', 'Pdesign', 'na',
-                 'PTech', 'na', 'na', 'na', 'na', 'na', 'na', 'Tender', 'AdB', 'Opportunity Owner',
-                 'Content Owner', 'na', 'Start', 'Duration', 'na', 'January', 'February', 'March',
-                 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December',
-                 'na', 'Q1', 'Q2', 'Q3', 'Q4', 'na', 'FY', 'na', 'na', 'Next years']
-DEBUG = True
-data_file = "/Users/ag/Documents/code/sketchin/redforecast/historical_data/forecast.db"
+# Import from the main application
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from src.config.const import FORECAST_FILE_PATHNAME, HEADER_ROWS, COLUMNS_NAMES, DB_FILE_PATHNAME
+from src.utils.misc import open_db, get_closest_dates
+from src.datawrangler.pandas_functions import read_excel, normalize_data
+
+# Configuration
+DEBUG = os.environ.get('REDFORECAST_DEBUG', 'False').lower() in ('true', '1', 't')
+data_file = DB_FILE_PATHNAME
 db_connection = None
 
 
@@ -128,45 +121,7 @@ def compare_forecast_entries(data: Dict, date1: str, date2: str) -> list:
     return annotated_opps
 
 
-def get_closest_dates(conn: Connection, date1: str, date2: str) -> Tuple[str, str]:
-    """
-    Finds the closest dates to date1 (backward) and date2 (forward) in the forecast database.
-
-    Args:
-        conn: Database connection
-        date1 (str): The first date as a string (YYYY-MM-DD).
-        date2 (str): The second date as a string (YYYY-MM-DD).
-
-    Returns:
-        Tuple[str, str]: A tuple containing the closest backward date to date1,
-                         and the closest forward date to date2.
-    """
-    cursor = conn.cursor()
-
-    # Closest backward date
-    cursor.execute("""
-                   SELECT fdate
-                   FROM forecast
-                   WHERE fdate <= ?
-                   ORDER BY fdate DESC
-                   LIMIT 1
-                   """, (date1,))
-
-    result1 = cursor.fetchone()
-    closest_date1 = result1[0] if result1 else None
-
-    # Closest forward date
-    cursor.execute("""
-                   SELECT fdate
-                   FROM forecast
-                   WHERE fdate >= ?
-                   ORDER BY fdate ASC
-                   LIMIT 1
-                   """, (date2,))
-
-    result2 = cursor.fetchone()
-    closest_date2 = result2[0] if result2 else None
-    return closest_date1, closest_date2
+# Using get_closest_dates from src.utils.misc
 
 
 def create_json(df: pd.DataFrame) -> str:
@@ -228,87 +183,10 @@ def create_json(df: pd.DataFrame) -> str:
     return json.dumps(output_json, indent=4)
 
 
-def open_db(pathname: str) -> Connection:
-    """
-    Opens or creates SQLite database with required schema.
-
-    Args:
-        pathname: Path to SQLite database file
-
-    Returns:
-        sqlite3.Connection: Open database connection
-    """
-    conn = sqlite3.connect(pathname)
-    cur = conn.cursor()
-    cur.execute('''CREATE TABLE IF NOT EXISTS forecast
-                   (
-                       id
-                                 INTEGER
-                           PRIMARY
-                               KEY
-                           AUTOINCREMENT,
-                       fdate
-                                 TEXT(8),
-                       json_data TEXT(1000000)
-                   )''')
-    cur.execute('CREATE INDEX IF NOT EXISTS idx_id ON forecast(id)')
-    cur.execute('CREATE INDEX IF NOT EXISTS idx_fdate ON forecast(fdate)')
-    conn.commit()
-    return conn
+# Using open_db from src.utils.misc
 
 
-def normalize_data(df: pd.DataFrame, column_names: List[str]) -> pd.DataFrame:
-    """
-    Set the column names of a DataFrame using a provided list.
-
-    Args:
-        df (pd.DataFrame): The input DataFrame
-        column_names (List[str]): List of column names to set
-
-    Returns:
-        pd.DataFrame: DataFrame with updated column names and normalized 'Start' column
-    """
-    # List of columns to convert
-    columns_to_convert = [
-        'PCC', 'PE', 'CPIS', 'CBE', 'Design', 'Tech', 'Total Value',
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December',
-        'Q1', 'Q2', 'Q3', 'Q4', 'FY'
-    ]
-
-    df_copy = df.copy()
-    df_copy.columns = column_names
-    for col in columns_to_convert:
-        if col in df_copy.columns:
-            df_copy[col] = pd.to_numeric(df_copy[col], errors='coerce').fillna(0.0)
-    df_copy['Start'] = pd.to_datetime(df_copy['Start'], errors='coerce')
-    df_copy['Start'] = df_copy['Start'].dt.strftime('%B')
-    df_copy['Psensitivity'] = df_copy['Psensitivity'].astype(float)
-    return df_copy
-
-
-def read_excel(file_path: str) -> pd.DataFrame:
-    """
-    Read an Excel file from the specified path, remove the first 20 rows,
-    remove the first two columns, and set row 0 as column names.
-
-    Args:
-        file_path (str): Path to the Excel file
-
-    Returns:
-        pd.DataFrame: DataFrame with the Excel content, first 20 rows and first 2 columns removed,
-        and row 0 set as column names
-    """
-    try:
-        warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
-        df = pd.read_excel(file_path, sheet_name="All opportunities")
-        df = df.iloc[HEADER_ROWS:]
-        df = df.reset_index(drop=True)
-    except Exception as load_error:
-        logger.error(f"Failed to load and normalize data: {load_error}")
-        app_stop(1)
-    print(f"Loaded and normalized data from {file_path}")
-    return df
+# Using normalize_data and read_excel from src.datawrangler.pandas_functions
 
 
 def sig_handler(signal_received: int, frame: Any) -> NoReturn:
@@ -412,18 +290,21 @@ def app_run() -> None:
 
 if __name__ == "__main__":
     signal(SIGINT, sig_handler)
-    if DEBUG:
-        logger.remove()
-        logger.add(sys.stderr, level="DEBUG",
-                   format="<green>{time:HH:mm:ss.SSS}</green> - <green>{time:x}</green> | <level>{level: <8}</level> | "
-                          "<green>{process.name}:{thread.name}</green> | <cyan>{name}</cyan>:<cyan>{function}"
-                          "</cyan>:<cyan>{line}</cyan> - <level>{message}</level>")
-    else:
-        logger.remove()
-        logger.add(sys.stderr, level="INFO",
-                   format="<green>{time:HH:mm:ss.SSS}</green> - <green>{time:x}</green> | <level>{level: <8}</level> | "
-                          "<green>{process.name}:{thread.name}</green> | <cyan>{name}</cyan>:<cyan>{function}"
-                          "</cyan>:<cyan>{line}</cyan> - <level>{message}</level>")
+
+    # Configure logger
+    logger.remove()  # Remove default handler
+    log_format = "<green>{time:HH:mm:ss.SSS}</green> - <green>{time:x}</green> | <level>{level: <8}</level> | <green>{process.name}:{thread.name}</green> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
+
+    # Set log level based on configuration
+    log_level = "DEBUG" if DEBUG else "INFO"
+    logger.add(sys.stderr, level=log_level, format=log_format)
+
+    # Set log file if specified in environment
+    log_file = os.environ.get('REDFORECAST_LOG_FILE')
+    if log_file:
+        logger.add(log_file, rotation="10 MB", retention="1 week", level=log_level, format=log_format)
+
+    logger.debug(f"Logger initialized with level {log_level}")
 
     try:
         app_start()

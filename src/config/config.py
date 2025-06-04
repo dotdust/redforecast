@@ -1,38 +1,33 @@
-from decouple import config
 from loguru import logger
 import sys
+import os
 
 
-class Config(object):
+class Config:
+    """Configuration class for the application."""
     # General
-    logger = None
     args = None
-    LOG_DEBUG = True  # True if logging level is DEBUG, False otherwise
+    LOG_DEBUG = os.environ.get('REDFORECAST_DEBUG', 'False').lower() in ('true', '1', 't')
 
     df = None
     mcp = None
     db = None
 
 
-class ProductionConfig(Config):
-    pass
+# Create a single instance of the Config class
+mcp_config = Config()
 
+# Configure logger
+logger.remove()  # Remove default handler
+log_format = "<green>{time:HH:mm:ss.SSS}</green> - <green>{time:x}</green> | <level>{level: <8}</level> | <green>{process.name}:{thread.name}</green> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
 
-class DebugConfig(Config):
-    pass
+# Set log level based on configuration
+log_level = "DEBUG" if mcp_config.LOG_DEBUG else "INFO"
+logger.add(sys.stderr, level=log_level, format=log_format)
 
+# Set log file if specified in environment
+log_file = os.environ.get('REDFORECAST_LOG_FILE')
+if log_file:
+    logger.add(log_file, rotation="10 MB", retention="1 week", level=log_level, format=log_format)
 
-CONFIG_DEBUG = True  # True if debug configuration is used, production otherwise
-if CONFIG_DEBUG:
-    mcp_config = DebugConfig
-else:
-    mcp_config = ProductionConfig
-
-if mcp_config.LOG_DEBUG:
-    logger.remove()
-    logger.add(sys.stderr, level="DEBUG",
-               format="<green>{time:HH:mm:ss.SSS}</green> - <green>{time:x}</green> | <level>{level: <8}</level> | <green>{process.name}:{thread.name}</green> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>")
-else:
-    logger.remove()
-    logger.add(sys.stderr, level="INFO",
-               format="<green>{time:HH:mm:ss.SSS}</green> - <green>{time:x}</green> | <level>{level: <8}</level> | <green>{process.name}:{thread.name}</green> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>")
+logger.debug(f"Logger initialized with level {log_level}")

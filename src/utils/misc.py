@@ -20,6 +20,27 @@ def open_db(pathname: str) -> Connection:
     """
     try:
         conn = sqlite3.connect(pathname)
+        cur = conn.cursor()
+        cur.execute('''CREATE TABLE IF NOT EXISTS forecast
+        (
+            id
+            INTEGER
+            PRIMARY
+            KEY
+            AUTOINCREMENT,
+            fdate
+            TEXT
+                       (
+            8
+                       ),
+            json_data TEXT
+                       (
+                           1000000
+                       )
+            )''')
+        cur.execute('CREATE INDEX IF NOT EXISTS idx_id ON forecast(id)')
+        cur.execute('CREATE INDEX IF NOT EXISTS idx_fdate ON forecast(fdate)')
+        conn.commit()
     except Exception as open_error:
         logger.error(f"Failed to open database: {open_error}")
         raise open_error
@@ -29,7 +50,7 @@ def open_db(pathname: str) -> Connection:
 
 def parse_options():
     parser = argparse.ArgumentParser(
-        prog=mcp_config, description="RED Forecast"
+        prog="redforecast", description="RED Forecast"
     )
     parser.add_argument(
         "--debug", action="store_true", help="Verbose debugging", default=False
@@ -51,6 +72,7 @@ def get_closest_dates(db_connection: sqlite3.Connection, date1: str, date2: str)
     Returns:
         Tuple[str, str]: A tuple containing the closest backward date to date1,
                          and the closest forward date to date2.
+                         If no dates are found, returns the original dates.
     """
     cursor = db_connection.cursor()
 
@@ -63,7 +85,7 @@ def get_closest_dates(db_connection: sqlite3.Connection, date1: str, date2: str)
                    """, (date1,))
 
     result1 = cursor.fetchone()
-    closest_date1 = result1[0] if result1 else None
+    closest_date1 = result1[0] if result1 else date1
 
     # Closest forward date
     cursor.execute("""
@@ -74,5 +96,9 @@ def get_closest_dates(db_connection: sqlite3.Connection, date1: str, date2: str)
                    """, (date2,))
 
     result2 = cursor.fetchone()
-    closest_date2 = result2[0] if result2 else None
+    closest_date2 = result2[0] if result2 else date2
+
+    # Close the cursor
+    cursor.close()
+
     return closest_date1, closest_date2

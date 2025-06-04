@@ -36,10 +36,17 @@ def sig_handler(signal_received: int, frame: Any) -> NoReturn:
 def app_stop(exitcode: int) -> NoReturn:
     """
     Stop the application with the given exit code.
+    Closes any open resources before exiting.
 
     Args:
         exitcode: The exit code to use when terminating the application
     """
+    # Close database connection if open
+    if hasattr(mcp_config, 'db') and mcp_config.db is not None:
+        logger.debug("Closing database connection")
+        mcp_config.db.close()
+        mcp_config.db = None
+
     sys.exit(exitcode)
 
 

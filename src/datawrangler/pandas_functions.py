@@ -50,12 +50,10 @@ def filter_opportunities(df: pd.DataFrame, month: str = "All",
         filtered_df = filtered_df[pd.to_numeric(filtered_df[factory], errors='coerce') > 0]
 
     if from_sensitivity != 0:
-        filtered_df = filtered_df[pd.to_numeric(filtered_df['Psensitivity'] >= from_sensitivity,
-                                                errors='coerce') >= from_sensitivity]
+        filtered_df = filtered_df[filtered_df['Psensitivity'] >= from_sensitivity]
 
     if to_sensitivity != -1:
-        filtered_df = filtered_df[pd.to_numeric(filtered_df['Psensitivity'] <= to_sensitivity,
-                                                errors='coerce') <= to_sensitivity]
+        filtered_df = filtered_df[filtered_df['Psensitivity'] <= to_sensitivity]
 
     if filtered_df.empty:
         return "No matching opportunities found."
@@ -126,7 +124,7 @@ def normalize_data(df: pd.DataFrame, column_names: List[str]) -> pd.DataFrame:
             df_copy[col] = pd.to_numeric(df_copy[col], errors='coerce').fillna(0.0)
     df_copy['Start'] = pd.to_datetime(df_copy['Start'], errors='coerce')
     df_copy['Start'] = df_copy['Start'].dt.strftime('%B')
-    df_copy['Psensitivty'] = df_copy['Psensitivity'].astype(float)
+    df_copy['Psensitivity'] = df_copy['Psensitivity'].astype(float)
     return df_copy
 
 
@@ -178,6 +176,10 @@ def get_forecast(
             return format_number(obj)
         return obj
 
+    # Initialize months to empty list if None
+    if months is None:
+        months = []
+
     if df.empty or not months:
         return json.dumps({"months": {}, "total": {}}, indent=4)
 
@@ -206,7 +208,8 @@ def get_forecast(
         weighted = df[month]
 
         splits = df[list(split_columns.keys())]
-        splits['POthers'] = 1 - splits.sum(axis=1)
+        # Ensure POthers is not negative by clamping to 0
+        splits['POthers'] = (1 - splits.sum(axis=1)).clip(lower=0)
 
         month_data = {
             "unweighted_forecast": unweighted.sum(),
