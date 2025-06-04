@@ -9,12 +9,11 @@ import sys
 from loguru import logger
 from typing import Dict, Callable, Union, List, Optional, Any, NoReturn, Tuple
 from signal import signal, SIGINT
-
-# Import from the main application
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from src.config.const import FORECAST_FILE_PATHNAME, HEADER_ROWS, COLUMNS_NAMES, DB_FILE_PATHNAME
 from src.utils.misc import open_db, get_closest_dates
 from src.datawrangler.pandas_functions import read_excel, normalize_data
+# Import from the main application
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 # Configuration
 DEBUG = os.environ.get('REDFORECAST_DEBUG', 'False').lower() in ('true', '1', 't')
@@ -39,7 +38,7 @@ def get_forecast(conn: Connection, date1: str, date2: str) -> str:
 
     result = {"forecasts": {}}
 
-    # Get first forecast
+    # Get the first forecast
     cursor.execute("SELECT json_data FROM forecast WHERE fdate = ?", (d1,))
     row1 = cursor.fetchone()
     if row1:
@@ -293,7 +292,9 @@ if __name__ == "__main__":
 
     # Configure logger
     logger.remove()  # Remove default handler
-    log_format = "<green>{time:HH:mm:ss.SSS}</green> - <green>{time:x}</green> | <level>{level: <8}</level> | <green>{process.name}:{thread.name}</green> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
+    log_format = ("<green>{time:HH:mm:ss.SSS}</green> - <green>{time:x}</green> | <level>{level: <8}</level> | "
+                  "<green>{process.name}:{thread.name}</green> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>"
+                  "{line}</cyan> - <level>{message}</level>")
 
     # Set log level based on configuration
     log_level = "DEBUG" if DEBUG else "INFO"

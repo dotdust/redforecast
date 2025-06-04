@@ -72,7 +72,7 @@ def get_closest_dates(db_connection: sqlite3.Connection, date1: str, date2: str)
     Returns:
         Tuple[str, str]: A tuple containing the closest backward date to date1,
                          and the closest forward date to date2.
-                         If no dates are found, returns the original dates.
+                         If no dates are found, return the original dates.
     """
     cursor = db_connection.cursor()
 

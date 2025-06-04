@@ -21,7 +21,7 @@ HEADER_ROWS = 21
 # Column names mapping for the Excel file
 # 'na' indicates columns that should be skipped/ignored
 COLUMNS_NAMES = [
-    'na', 'na',  # Skip first two columns
+    'na', 'na',  # Skip the first two columns
     'id', 'Client', 'Contact Role', 'Project Name',
     'na', 'na',  # Skip columns 7-8
     'Status',

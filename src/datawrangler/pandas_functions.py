@@ -161,7 +161,7 @@ def get_forecast(
         factory (str, optional): Factory filter, defaults to 'All'.
 
     Returns:
-        str: JSON-formatted forecast data with thousands separators.
+        str: JSON-formatted forecast data with the thousand separators.
     """
 
     def format_number(value: float) -> str:
@@ -176,7 +176,7 @@ def get_forecast(
             return format_number(obj)
         return obj
 
-    # Initialize months to empty list if None
+    # Initialize months to an empty list if None
     if months is None:
         months = []
 

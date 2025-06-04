@@ -19,7 +19,9 @@ mcp_config = Config()
 
 # Configure logger
 logger.remove()  # Remove default handler
-log_format = "<green>{time:HH:mm:ss.SSS}</green> - <green>{time:x}</green> | <level>{level: <8}</level> | <green>{process.name}:{thread.name}</green> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
+log_format = ("<green>{time:HH:mm:ss.SSS}</green> - <green>{time:x}</green> | <level>{level: <8}</level> | "
+              "<green>{process.name}:{thread.name}</green> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}"
+              "</cyan> - <level>{message}</level>")
 
 # Set log level based on configuration
 log_level = "DEBUG" if mcp_config.LOG_DEBUG else "INFO"

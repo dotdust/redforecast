@@ -26,7 +26,7 @@ def compare_forecast_dates(date1: str, date2: str) -> str:
 
     result = {"forecasts": {}}
 
-    # Get first forecast
+    # Get the first forecast
     cursor.execute("SELECT json_data FROM forecast WHERE fdate = ?", (d1,))
     row1 = cursor.fetchone()
     if row1:
