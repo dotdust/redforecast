@@ -5,7 +5,6 @@ from config.const import FORECAST_FILE_PATHNAME, HEADER_ROWS, COLUMNS_NAMES
 from typing import Dict, Callable, Union, List, Optional, Any
 from datetime import datetime
 from utils.misc import get_closest_dates
-
 import json
 import sqlite3
 
@@ -52,6 +51,7 @@ def compare_forecast_dates(date1: str, date2: str) -> str:
     return json.dumps({"differences": differences})
 
 
+# noinspection PyTypeChecker
 def compare_forecast_entries(data: dict, date1: str, date2: str) -> list:
     """
     Compares Opportunities for two dates by matching on 'Client' and 'Project Name',
@@ -73,7 +73,7 @@ def compare_forecast_entries(data: dict, date1: str, date2: str) -> list:
             if isinstance(v1, (int, float)) and isinstance(v2, (int, float)):
                 difference = v2 - v1
             else:
-                # For non-numeric values, just use the newest value as the difference
+                # For non-numeric values, use the newest value as the difference
                 difference = v2
             return {"oldest": v1, "newest": v2, "difference": difference}
         return {"value": v1}
@@ -94,7 +94,7 @@ def compare_forecast_entries(data: dict, date1: str, date2: str) -> list:
             pass
         return False
 
-    def should_exclude_field(key):
+    def should_exclude_field(field_key):
         """Check if a field should be excluded from comparison and results."""
         excluded_fields = [
             "PCC", "PE", "CPIS", "Design", "Tech", "Others",
@@ -105,19 +105,19 @@ def compare_forecast_entries(data: dict, date1: str, date2: str) -> list:
             "Factories split", "Revenues by month",
             "id"  # Exclude id field from comparison
         ]
-        return key in excluded_fields or key.endswith("_id") or key.endswith("Id")
+        return field_key in excluded_fields or field_key.endswith("_id") or field_key.endswith("Id")
 
     def filter_excluded_fields(opp):
         """Remove excluded fields from an opportunity dictionary."""
         return {k: v for k, v in opp.items() if not should_exclude_field(k)}
 
-    def deep_annotate(o1, o2, key=None):
+    def deep_annotate(o1, o2, field_key=None):
         # Special handling for Start and Duration fields
-        if key in ["Start", "Duration"]:
+        if field_key in ["Start", "Duration"]:
             # If both values are empty, return no difference
             if is_empty(o1) and is_empty(o2):
                 return {"value": None}
-            # Only report difference if first set is empty and second set is not
+            # Only report difference if the first set is empty and the second set is not
             elif is_empty(o1) and not is_empty(o2):
                 return {"oldest": o1, "newest": o2, "difference": o2}
             # If values are the same or don't meet the special condition, no difference
@@ -186,7 +186,7 @@ def compare_forecast_entries(data: dict, date1: str, date2: str) -> list:
         opp1 = opps1.get(key)
         opp2 = opps2.get(key)
 
-        # Skip opportunities in the first set where Total Value is 0
+        # Skip opportunities in the first set where the Total Value is 0
         if opp1 and opp1.get("Total Value") == "0":
             continue
 
