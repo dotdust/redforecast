@@ -1,10 +1,10 @@
-from config.config import mcp_config
-from datawrangler.pandas_functions import (
+from mcpserver.config.config import mcp_config
+from mcpserver.datawrangler.pandas_functions import (
     read_excel, normalize_data, filter_opportunities, get_forecast)
-from config.const import FORECAST_FILE_PATHNAME, HEADER_ROWS, COLUMNS_NAMES
+from mcpserver.config.const import FORECAST_FILE_PATHNAME, HEADER_ROWS, COLUMNS_NAMES
 from typing import Dict, Callable, Union, List, Optional, Any
 from datetime import datetime
-from utils.misc import get_closest_dates
+from mcpserver.utils.misc import get_closest_dates
 import json
 import sqlite3
 

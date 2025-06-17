@@ -1,6 +1,6 @@
 import pandas as pd
 import json
-from config.const import HEADER_ROWS, COLUMNS_NAMES
+from mcpserver.config.const import HEADER_ROWS, COLUMNS_NAMES
 from typing import Dict, Callable, Union, List, Optional, Any
 import warnings
 

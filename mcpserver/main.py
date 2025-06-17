@@ -8,15 +8,15 @@ import sys
 from typing import Any, NoReturn, Optional
 from fastmcp import FastMCP
 from signal import signal, SIGINT
-from utils.misc import parse_options, open_db
-from datawrangler.pandas_functions import (
+from mcpserver.utils.misc import parse_options, open_db
+from mcpserver.datawrangler.pandas_functions import (
     read_excel, normalize_data
 )
-from config.config import logger, mcp_config
-from config.const import (
+from mcpserver.config.config import logger, mcp_config
+from mcpserver.config.const import (
     app_Name, app_Version, FORECAST_FILE_PATHNAME, HEADER_ROWS, COLUMNS_NAMES, DB_FILE_PATHNAME
 )
-from mcptools.mcptools import register_tools
+from mcpserver.mcptools.mcptools import register_tools
 
 mcp_forecast = None
 

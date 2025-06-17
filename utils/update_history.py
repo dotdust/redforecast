@@ -9,11 +9,11 @@ import sys
 from loguru import logger
 from typing import Dict, Callable, Union, List, Optional, Any, NoReturn, Tuple
 from signal import signal, SIGINT
-from src.config.const import FORECAST_FILE_PATHNAME, HEADER_ROWS, COLUMNS_NAMES, DB_FILE_PATHNAME
-from src.utils.misc import open_db, get_closest_dates
-from src.datawrangler.pandas_functions import read_excel, normalize_data
 # Import from the main application
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from mcpserver.config.const import FORECAST_FILE_PATHNAME, HEADER_ROWS, COLUMNS_NAMES, DB_FILE_PATHNAME
+from mcpserver.utils.misc import open_db, get_closest_dates
+from mcpserver.datawrangler.pandas_functions import read_excel, normalize_data
 
 # Configuration
 DEBUG = os.environ.get('REDFORECAST_DEBUG', 'False').lower() in ('true', '1', 't')
@@ -307,7 +307,7 @@ def compare_forecast_entries(data: Dict, date1: str, date2: str) -> list:
         return annotated_opps
 
 
-# Using get_closest_dates from src.utils.misc
+# Using get_closest_dates from src.utils.docs
 
 
 def create_json(df: pd.DataFrame) -> str:
@@ -369,7 +369,7 @@ def create_json(df: pd.DataFrame) -> str:
     return json.dumps(output_json, indent=4)
 
 
-# Using open_db from src.utils.misc
+# Using open_db from src.utils.docs
 
 
 # Using normalize_data and read_excel from src.datawrangler.pandas_functions

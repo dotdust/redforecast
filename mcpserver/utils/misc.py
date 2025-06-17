@@ -2,8 +2,8 @@ import argparse
 import configparser
 import warnings
 from typing import Dict, Callable, Union, List, Optional, Tuple
-from config.config import logger, mcp_config
-from config.const import HEADER_ROWS, COLUMNS_NAMES
+from mcpserver.config.config import logger, mcp_config
+from mcpserver.config.const import HEADER_ROWS, COLUMNS_NAMES
 import sqlite3
 from sqlite3 import Connection
 
@@ -22,22 +22,16 @@ def open_db(pathname: str) -> Connection:
         conn = sqlite3.connect(pathname)
         cur = conn.cursor()
         cur.execute('''CREATE TABLE IF NOT EXISTS forecast
-        (
-            id
-            INTEGER
-            PRIMARY
-            KEY
-            AUTOINCREMENT,
-            fdate
-            TEXT
                        (
-            8
-                       ),
-            json_data TEXT
-                       (
-                           1000000
-                       )
-            )''')
+                           id
+                                     INTEGER
+                               PRIMARY
+                                   KEY
+                               AUTOINCREMENT,
+                           fdate
+                                     TEXT(8),
+                           json_data TEXT(1000000)
+                       )''')
         cur.execute('CREATE INDEX IF NOT EXISTS idx_id ON forecast(id)')
         cur.execute('CREATE INDEX IF NOT EXISTS idx_fdate ON forecast(fdate)')
         conn.commit()
@@ -81,7 +75,8 @@ def get_closest_dates(db_connection: sqlite3.Connection, date1: str, date2: str)
                    SELECT fdate
                    FROM forecast
                    WHERE fdate <= ?
-                   ORDER BY fdate DESC LIMIT 1
+                   ORDER BY fdate DESC
+                   LIMIT 1
                    """, (date1,))
 
     result1 = cursor.fetchone()
@@ -92,7 +87,8 @@ def get_closest_dates(db_connection: sqlite3.Connection, date1: str, date2: str)
                    SELECT fdate
                    FROM forecast
                    WHERE fdate >= ?
-                   ORDER BY fdate ASC LIMIT 1
+                   ORDER BY fdate ASC
+                   LIMIT 1
                    """, (date2,))
 
     result2 = cursor.fetchone()
