@@ -2,8 +2,15 @@ import argparse
 import configparser
 import warnings
 from typing import Dict, Callable, Union, List, Optional, Tuple
-from mcpserver.config.config import logger, mcp_config
-from mcpserver.config.const import HEADER_ROWS, COLUMNS_NAMES
+
+try:
+    # Try relative imports (when running from mcpserver directory)
+    from config.config import logger, mcp_config
+    from config.const import HEADER_ROWS, COLUMNS_NAMES
+except ImportError:
+    # Try absolute imports (when running from project root)
+    from mcpserver.config.config import logger, mcp_config
+    from mcpserver.config.const import HEADER_ROWS, COLUMNS_NAMES
 import sqlite3
 from sqlite3 import Connection
 

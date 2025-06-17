@@ -1,10 +1,20 @@
-from mcpserver.config.config import mcp_config
-from mcpserver.datawrangler.pandas_functions import (
-    read_excel, normalize_data, filter_opportunities, get_forecast)
-from mcpserver.config.const import FORECAST_FILE_PATHNAME, HEADER_ROWS, COLUMNS_NAMES
+try:
+    # Try relative imports (when running from mcpserver directory)
+    from config.config import mcp_config
+    from datawrangler.pandas_functions import (
+        read_excel, normalize_data, filter_opportunities, get_forecast)
+    from config.const import FORECAST_FILE_PATHNAME, HEADER_ROWS, COLUMNS_NAMES
+    from utils.misc import get_closest_dates
+except ImportError:
+    # Try absolute imports (when running from project root)
+    from mcpserver.config.config import mcp_config
+    from mcpserver.datawrangler.pandas_functions import (
+        read_excel, normalize_data, filter_opportunities, get_forecast)
+    from mcpserver.config.const import FORECAST_FILE_PATHNAME, HEADER_ROWS, COLUMNS_NAMES
+    from mcpserver.utils.misc import get_closest_dates
+
 from typing import Dict, Callable, Union, List, Optional, Any
 from datetime import datetime
-from mcpserver.utils.misc import get_closest_dates
 import json
 import sqlite3
 

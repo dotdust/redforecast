@@ -1,6 +1,12 @@
 import pandas as pd
 import json
-from mcpserver.config.const import HEADER_ROWS, COLUMNS_NAMES
+
+try:
+    # Try relative imports (when running from mcpserver directory)
+    from config.const import HEADER_ROWS, COLUMNS_NAMES
+except ImportError:
+    # Try absolute imports (when running from project root)
+    from mcpserver.config.const import HEADER_ROWS, COLUMNS_NAMES
 from typing import Dict, Callable, Union, List, Optional, Any
 import warnings
 
